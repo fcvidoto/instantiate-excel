@@ -39,6 +39,17 @@ Public Property Set workbookInstanciado(ByVal valor As Workbook): Set m_workbook
 Public Property Get meWBK() As Workbook: Set meWBK = m_meWBK: End Property
 Public Property Set meWBK(ByVal valor As Object): Set m_meWBK = valor: End Property
 
+'Cria um novo Excel
+Sub NewFile()
+  Set Me.xls = New Excel.Application
+  Me.xls.Workbooks.Add
+End Sub
+
+'Salva arquivo no endereco
+Sub SaveAs(endereco As String)
+  Me.xls.ActiveWorkbook.SaveAs endereco
+End Sub
+
 'Se a sheet não existe na RQ, cria a sheet
 Function SeSheetNaoExisteCriaSheet(ByRef sheetAondeCola As String) As Boolean
     
@@ -57,6 +68,16 @@ Function SeSheetNaoExisteCriaSheet(ByRef sheetAondeCola As String) As Boolean
     Next sheet
     
 End Function
+
+'cola os dados do recordset na planilha
+Sub ColaDadosRS(ByVal rs As Recordset, Optional strSQL As String)
+  
+  For i = 0 To rs.Fields.Count - 1
+    Me.xls.Sheets(1).Cells(1, i + 1) = rs.Fields(i).name
+  Next i
+  
+  Me.xls.Sheets(1).Range("A2").CopyFromRecordset rs
+End Sub
 
 'Captura a isntancia do Excel
 Private Sub GetInstance()
