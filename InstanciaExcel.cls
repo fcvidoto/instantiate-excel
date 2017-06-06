@@ -69,14 +69,216 @@ Function SeSheetNaoExisteCriaSheet(ByRef sheetAondeCola As String) As Boolean
     
 End Function
 
-'cola os dados do recordset na planilha
-Sub ColaDadosRS(ByVal rs As Recordset, Optional strSQL As String)
+'cria a tabela no range de dados
+Public Sub converteRangeTabela(nomeDaSheet As String, _
+                              nomeDoReport As String, _
+                              is_tabelaComum As Boolean, _
+                              colunaLetraInicial As Variant, _
+                              colunaNumeroInicial As Variant, _
+                              isExcecao As Boolean)
+
+  If is_tabelaComum = False Then
+    xls.Sheets(nomeDaSheet).ListObjects.Add(xlSrcRange, xls.Sheets(nomeDaSheet).UsedRange, , xlYes).name = nomeDoReport
+    xls.Sheets(nomeDaSheet).UsedRange.Select
+    xls.Sheets(nomeDaSheet).ListObjects(nomeDoReport).TableStyle = ""
+    Exit Sub
+  End If
   
-  For i = 0 To rs.Fields.Count - 1
-    Me.xls.Sheets(1).Cells(1, i + 1) = rs.Fields(i).name
+  '-----------------------------------------------------------------
+  'comeca com a coluna A
+  Dim ultimaLinha As Double
+  ultimaLinha = xls.Sheets(nomeDaSheet).Range(colunaLetraInicial & xls.Sheets(nomeDaSheet).Rows.Count).End(xlUp).Row
+  
+  Dim primeiraLinha As Double
+  
+  '**********************************
+  'se for da coluna 'A' nao soma o +1
+  If colunaLetraInicial = "A" Then
+    primeiraLinha = xls.Sheets(nomeDaSheet).Range(colunaLetraInicial & ultimaLinha).End(xlUp).Row 'nao pega o titulo do report
+  Else
+    primeiraLinha = xls.Sheets(nomeDaSheet).Range(colunaLetraInicial & ultimaLinha).End(xlUp).Row + 1 'nao pega o titulo do report
+  End If
+  '**********************************
+
+  'descobre a ultima coluna
+  Dim ultimaColuna As Double
+  ultimaColuna = xls.Sheets(nomeDaSheet).Range(colunaLetraInicial & primeiraLinha).End(xlToRight).Column
+
+  'seleciona o range da tabela
+  Dim enderecoRange As String
+  enderecoRange = xls.Sheets(nomeDaSheet).Range(xls.Sheets(nomeDaSheet).Cells(primeiraLinha, CDbl(colunaNumeroInicial)), xls.Sheets(nomeDaSheet).Cells(ultimaLinha + IIf(isExcecao, 1, 0), ultimaColuna)).Address
+  
+  
+On Error Resume Next
+  xls.Sheets(nomeDaSheet).ListObjects.Add(xlSrcRange, xls.Sheets(nomeDaSheet).Range(enderecoRange), , xlYes).name = nomeDoReport
+  xls.Sheets(nomeDaSheet).Range(enderecoRange).Select
+  xls.Sheets(nomeDaSheet).ListObjects(nomeDoReport).TableStyle = ""
+    
+End Sub
+
+'cria a tabela no range de dados
+Public Sub converteRangeTabela_Scorecards(nomeDaSheet As String, _
+                                          nomeDoReport As String, _
+                                          is_tabelaComum As Boolean, _
+                                          colunaLetraInicial As Variant, _
+                                          colunaNumeroInicial As Variant, _
+                                          isExcecao As Boolean)
+
+  If is_tabelaComum = False Then
+    xls.Sheets(nomeDaSheet).ListObjects.Add(xlSrcRange, xls.Sheets(nomeDaSheet).UsedRange, , xlYes).name = nomeDoReport
+    xls.Sheets(nomeDaSheet).UsedRange.Select
+    xls.Sheets(nomeDaSheet).ListObjects(nomeDoReport).TableStyle = ""
+    Exit Sub
+  End If
+  
+  '-----------------------------------------------------------------
+  'comeca com a coluna A
+  Dim ultimaLinha As Double
+  ultimaLinha = xls.Sheets(nomeDaSheet).Range(colunaLetraInicial & xls.Sheets(nomeDaSheet).Rows.Count).End(xlUp).Row
+  
+  Dim primeiraLinha As Double
+  
+  primeiraLinha = xls.Sheets(nomeDaSheet).Range(colunaLetraInicial & ultimaLinha).End(xlUp).Row 'nao pega o titulo do report
+
+  'descobre a ultima coluna
+  Dim ultimaColuna As Double
+  ultimaColuna = xls.Sheets(nomeDaSheet).Range(colunaLetraInicial & primeiraLinha).End(xlToRight).Column
+
+  'seleciona o range da tabela
+  Dim enderecoRange As String
+  enderecoRange = xls.Sheets(nomeDaSheet).Range(xls.Sheets(nomeDaSheet).Cells(primeiraLinha, CDbl(colunaNumeroInicial)), xls.Sheets(nomeDaSheet).Cells(ultimaLinha + IIf(isExcecao, 1, 0), ultimaColuna)).Address
+  
+  
+On Error Resume Next
+  xls.Sheets(nomeDaSheet).ListObjects.Add(xlSrcRange, xls.Sheets(nomeDaSheet).Range(enderecoRange), , xlYes).name = nomeDoReport
+  xls.Sheets(nomeDaSheet).Range(enderecoRange).Select
+  xls.Sheets(nomeDaSheet).ListObjects(nomeDoReport).TableStyle = ""
+    
+End Sub
+
+'Muda a config do Excel para o tamanho 80
+Public Sub ZoomOitenta(nomeDaSheet As String)
+  Me.xls.Sheets(nomeDaSheet).Select 'seleciona a sheet
+  Me.xls.ActiveWindow.Zoom = 80
+End Sub
+
+'formata as casas decimais da sheet
+Public Sub formataCasasDecimaisDaSheet(sheetName As String)
+  Me.xls.Sheets(sheetName).UsedRange.NumberFormat = "0.000"
+End Sub
+
+'formata a primeira coluna da sheet como data
+'Public Sub formataPrimeiraColunaData(nomeDaSheet As String)
+'  Me.xls.Sheets(nomeDaSheet).Columns("A:A").NumberFormat = "dd/mm/yyyy"
+'End Sub
+
+'insere titulo do relatorio
+Public Sub insereTitulo(sheetName As String, titulo As String, tituloEspecial As Boolean)
+
+  Dim ultimaLinha As Double
+  ultimaLinha = xls.Sheets(sheetName).Range("B" & xls.Sheets(sheetName).Rows.Count).End(xlUp).Row + IIf(tituloEspecial, 1, 0) + 1
+  xls.Sheets(sheetName).Range("B" & ultimaLinha + 2).Value = titulo
+  
+  '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  'altera o fundo e negrita
+  xls.Sheets(sheetName).Range(xls.Sheets(sheetName).Cells(ultimaLinha + 2, 2), xls.Sheets(sheetName).Cells(ultimaLinha + 2, 3)).Font.Bold = True
+  If tituloEspecial Then
+    xls.Sheets(sheetName).Range(xls.Sheets(sheetName).Cells(ultimaLinha + 2, 2), xls.Sheets(sheetName).Cells(ultimaLinha + 2, 6 - IIf(tituloEspecial, 2, 0))).Interior.Color = rgbBlack
+    xls.Sheets(sheetName).Range(xls.Sheets(sheetName).Cells(ultimaLinha + 2, 2), xls.Sheets(sheetName).Cells(ultimaLinha + 2, 3)).Font.Color = rgbWhite
+  Else
+    xls.Sheets(sheetName).Range(xls.Sheets(sheetName).Cells(ultimaLinha + 2, 2), xls.Sheets(sheetName).Cells(ultimaLinha + 2, 6)).Interior.Color = rgbLightGrey
+  End If
+  
+End Sub
+
+
+'insere titulo do relatorio
+Public Sub insereTituloScorecards(sheetName As String, titulo As String, tituloEspecial As Boolean, colunaLetra As String, colunaNumero As Variant)
+
+  Dim ultimaLinha As Double
+  ultimaLinha = xls.Sheets(sheetName).Range(colunaLetra & xls.Sheets(sheetName).Rows.Count).End(xlUp).Row + 2 'coluna 'B' fixa
+  xls.Sheets(sheetName).Range(colunaLetra & ultimaLinha).Value = titulo
+  
+  '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  'altera o fundo e negrita
+  If tituloEspecial Then
+    xls.Sheets(sheetName).Range(colunaLetra & ultimaLinha).Font.Bold = True
+    xls.Sheets(sheetName).Range(xls.Sheets(sheetName).Cells(ultimaLinha, CDbl(colunaNumero)), xls.Sheets(sheetName).Cells(ultimaLinha, CDbl(colunaNumero) + 1)).Interior.Color = rgbBlack
+    xls.Sheets(sheetName).Range(xls.Sheets(sheetName).Cells(ultimaLinha, CDbl(colunaNumero)), xls.Sheets(sheetName).Cells(ultimaLinha, CDbl(colunaNumero) + 1)).Font.Color = rgbWhite
+  Else
+    xls.Sheets(sheetName).Range(colunaLetra & ultimaLinha).Font.Bold = True
+    xls.Sheets(sheetName).Range(xls.Sheets(sheetName).Cells(ultimaLinha, CDbl(colunaNumero)), xls.Sheets(sheetName).Cells(ultimaLinha, CDbl(colunaNumero) + 1)).Interior.Color = rgbLightGrey
+  End If
+  
+End Sub
+
+'cola os dados do recordset na planilha | formata o estilo da header aqui
+Sub ColaDadosRS(ByVal rs As Recordset, _
+                      sheetName As String, _
+                      colunaLetraInicial As Variant, _
+                      colunaNumeroInicial As Variant)
+             
+         
+  Dim i As Integer
+  Dim ultimaLinha As Double
+  Dim x As Integer
+  Dim k As Integer
+  
+  x = colunaNumeroInicial
+  k = colunaNumeroInicial
+  
+  '--------------------------------------------------------------
+  ultimaLinha = xls.Sheets(sheetName).Range("B" & xls.Sheets(sheetName).Rows.Count).End(xlUp).Row 'coluna 'B' fixa
+  
+  'se for o primeiro report, comeca na linha 2
+  If ultimaLinha = 1 Then
+    ultimaLinha = 3
+  Else
+    ultimaLinha = ultimaLinha + 1
+  End If
+  
+  'novas alteraçoes, coluna inicial variável <-----------------
+  For i = 1 To rs.Fields.Count
+    Me.xls.Sheets(sheetName).Cells(ultimaLinha, k) = rs.Fields(i - 1).name
+    k = k + 1
   Next i
   
-  Me.xls.Sheets(1).Range("A2").CopyFromRecordset rs
+  rs.MoveFirst
+  Me.xls.Sheets(sheetName).Range(colunaLetraInicial & ultimaLinha + 1).CopyFromRecordset rs
+End Sub
+
+Sub ColaDadosRS_Scorecards(ByVal rs As Recordset, _
+                          sheetName As String, _
+                          colunaLetraInicial As Variant, _
+                          colunaNumeroInicial As Variant)
+             
+         
+  Dim i As Integer
+  Dim ultimaLinha As Double
+  Dim x As Integer
+  Dim k As Integer
+  
+  x = colunaNumeroInicial
+  k = colunaNumeroInicial
+  
+  '--------------------------------------------------------------
+  ultimaLinha = xls.Sheets(sheetName).Range(colunaLetraInicial & xls.Sheets(sheetName).Rows.Count).End(xlUp).Row + 1 'coluna 'B' fixa
+  
+  'se for o primeiro report, comeca na linha 2
+  If ultimaLinha = 1 Then
+    ultimaLinha = 3
+  Else
+    ultimaLinha = ultimaLinha + 1
+  End If
+  
+  'novas alteraçoes, coluna inicial variável <-----------------
+  For i = 1 To rs.Fields.Count
+    Me.xls.Sheets(sheetName).Cells(ultimaLinha, k) = rs.Fields(i - 1).name
+    k = k + 1
+  Next i
+  
+  rs.MoveFirst
+  Me.xls.Sheets(sheetName).Range(colunaLetraInicial & ultimaLinha + 1).CopyFromRecordset rs
 End Sub
 
 'Captura a isntancia do Excel
@@ -179,22 +381,22 @@ Public Function CapturaDados(ByVal sheetDaBase As String) As Variant
     
     'O endereço do range que será capturado
     Dim rangeAddress As String: rangeAddress = "A1:" & ultimaLinha
-    Dim dataRange As Variant
+    Dim DataRange As Variant
 
     Me.workbookInstanciado.Sheets(sheetDaBase).Range(rangeAddress).NumberFormat = "General" 'Corrigindo bug
     
     'Array de dados
-    dataRange = Me.workbookInstanciado.Sheets(sheetDaBase).Range(rangeAddress).Value
+    DataRange = Me.workbookInstanciado.Sheets(sheetDaBase).Range(rangeAddress).Value
     
-    CapturaDados = dataRange
+    CapturaDados = DataRange
 
 End Function
 
 'Fecha o Excel quando acabar a instância
 Private Sub Class_Terminate()
     
-    If Not Me.workbookInstanciado Is Nothing Then
-        Me.workbookInstanciado.Close False
+    If Not Me.xls Is Nothing Then
+        Me.xls.ActiveWorkbook.Close False
     End If
 
 End Sub
@@ -208,7 +410,7 @@ Public Function ValidaSeSheetExiste(ByVal nomeDaSheet As String) As Boolean
     ValidaSeSheetExiste = False
     
     'Itera pela lista de sheets
-    For Each sheet In Me.workbookInstanciado.Worksheets
+    For Each sheet In Me.xls.Sheets
         
         'Se a sheet existe, retorna True
         If sheet.name = nomeDaSheet Then
@@ -300,7 +502,7 @@ Public Sub ColaOsDados(ByVal sheetName As String, _
     End If
     
     'Se não houver workbook, cria um novo só para calcular o address (bug do Excel)
-    If Application.Workbooks.Count = 0 Then
+    If Excel.Application.Workbooks.Count = 0 Then
         Workbooks.Add
     End If
           
@@ -798,15 +1000,15 @@ Public Function CapturaColunas(ByRef sheetName As String) As Variant
     
     'O endereço do range que será capturado
     Dim rangeAddress As String: rangeAddress = "A1:" & ultimaColuna
-    Dim dataRange As Variant
+    Dim DataRange As Variant
 
     Me.workbookInstanciado.Sheets(sheetName).Range(rangeAddress).NumberFormat = "General" 'Corrigindo bug
     
     'Array de dados
-    dataRange = Me.workbookInstanciado.Sheets(sheetName).Range(rangeAddress).Value
+    DataRange = Me.workbookInstanciado.Sheets(sheetName).Range(rangeAddress).Value
     
     'Retorna os dados do array (Transpõe cada coluna em linha)
-    CapturaColunas = Application.WorksheetFunction.Transpose(dataRange)
+    CapturaColunas = Excel.Application.WorksheetFunction.Transpose(DataRange)
 
 End Function
 
@@ -822,92 +1024,41 @@ Public Sub ProtegePlanilhas()
 
 End Sub
 
-'Monta um array de 2 colunas contendo os dados de valores únicos sobre cada valor da coluna
-Public Function MontaValoresUnicos(ByRef listaDeColunas As Variant, _
-                                   ByVal sheetName As String) As Variant
-        
-    Dim i As Long
-    Dim listaValoresUnicos As Variant
-    Dim listaCompleta() As Variant
-    Dim j As Integer
-    Dim ItemsUnicos As ItemsUnicos: Set ItemsUnicos = New ItemsUnicos
-    
-    'Se houver mais de 15 colunas, exibir msg de erro
-'    If UBound(listaDeColunas) > 40 Then
-'        MsgBox "A quantidade de colunas excede ao limite de 40 colunas."
+''Monta um array de 2 colunas contendo os dados de valores únicos sobre cada valor da coluna
+'Public Function MontaValoresUnicos(ByRef listaDeColunas As Variant, _
+'                                   ByVal sheetName As String) As Variant
+'
+'    Dim i As Long
+'    Dim listaValoresUnicos As Variant
+'    Dim listaCompleta() As Variant
+'    Dim j As Integer
+'    Dim ItemsUnicos As ItemsUnicos: Set ItemsUnicos = New ItemsUnicos
+'
+'    'Se houver mais de 15 colunas, exibir msg de erro
+''    If UBound(listaDeColunas) > 40 Then
+''        MsgBox "A quantidade de colunas excede ao limite de 40 colunas."
+''        Exit Function
+''    End If
+'
+'    'Se não houver dados na lista de colunas
+'    If IsArray(listaDeColunas) = False Then
 '        Exit Function
 '    End If
-    
-    'Se não houver dados na lista de colunas
-    If IsArray(listaDeColunas) = False Then
-        Exit Function
-    End If
-
-    'lista de valores únicos de cada coluna
-    For i = 1 To UBound(listaDeColunas)
-        
-        'Pega os valores únicos de cada coluna
-        listaValoresUnicos = ValoresUnicosDic(i, sheetName)
-        
-        'Adiciona os dados na coleção
-        Call AddCol(ItemsUnicos, listaValoresUnicos)
-    Next i
-    
-    'Transforma a coleção em array
-    MontaValoresUnicos = ColectionToArray(ItemsUnicos)
-
-End Function
-
-'Transforma a coleção em array
-Private Function ColectionToArray(ByRef ItemsUnicos As ItemsUnicos) As Variant
-    
-    'Tamanho do array
-    Dim tamanhoDoArray As Long
-    tamanhoDoArray = ItemsUnicos.Count
-    
-    'Redimensiona o array
-    Dim lista As Variant
-    ReDim lista(1 To tamanhoDoArray, 1 To 2)
-    
-    Dim i As Long
-    Dim ItemUnico As ItemUnico
-    
-    'Itera pela coleção e monta o array
-    For Each ItemUnico In ItemsUnicos
-        
-        i = i + 1
-        lista(i, 1) = ItemUnico.coluna
-        lista(i, 2) = ItemUnico.valor
-    
-    Next ItemUnico
-    
-    'Retorna a lista com os valores
-    ColectionToArray = lista
-    
-End Function
-
-'Adiciona os dados na coleção
-Public Sub AddCol(ByRef ItemsUnicos As ItemsUnicos, _
-                  ByRef listaValoresUnicos As Variant)
-    
-    Dim i As Integer
-    
-    Dim ItemUnico As ItemUnico
-    
-    'Adiciona os valores únicos em cada coluna
-    For i = 1 To UBound(listaValoresUnicos)
-        
-        Set ItemUnico = New ItemUnico
-        
-        'Cria os valores da coleção
-        ItemUnico.coluna = listaValoresUnicos(0)
-        ItemUnico.valor = listaValoresUnicos(i)
-        
-        'Pra cada linha do array, adiciona os valores na coleção
-        ItemsUnicos.Add ItemUnico
-    Next i
-
-End Sub
+'
+'    'lista de valores únicos de cada coluna
+'    For i = 1 To UBound(listaDeColunas)
+'
+'        'Pega os valores únicos de cada coluna
+'        listaValoresUnicos = ValoresUnicosDic(i, sheetName)
+'
+'        'Adiciona os dados na coleção
+'        Call AddCol(ItemsUnicos, listaValoresUnicos)
+'    Next i
+'
+'    'Transforma a coleção em array
+'    MontaValoresUnicos = ColectionToArray(ItemsUnicos)
+'
+'End Function
 
 'Pega os valores únicos de cada coluna
 Private Function ValoresUnicosDic(ByVal colunaNumero As Integer, _
@@ -926,14 +1077,14 @@ Private Function ValoresUnicosDic(ByVal colunaNumero As Integer, _
     Dim endereco As String
     endereco = Range(Cells(1, colunaNumero), Cells(ultimaLinha, colunaNumero)).Address
     
-    Dim dataRange As Variant
-    dataRange = Me.workbookInstanciado.Sheets(sheetName).Range(endereco).Value
+    Dim DataRange As Variant
+    DataRange = Me.workbookInstanciado.Sheets(sheetName).Range(endereco).Value
     
     'Itera pela lista da sheet e monta os valores únicos
     For i = 1 To ultimaLinha
             
         'Valor da célula
-        cellValue = dataRange(i, 1)
+        cellValue = DataRange(i, 1)
             
         'Coloca no dicionário apenas os registros únicos
         If dic.Exists(cellValue) = False Then
@@ -964,6 +1115,15 @@ On Error GoTo exitSub
 exitSub:
 End Sub
 
+'cria a quantidade de sheets necessarias no arquivo
+Public Sub CriaQTDSheet(qtdDeSheets As Integer)
+
+  While Not Me.xls.Sheets.Count = qtdDeSheets
+    Me.xls.Sheets.Add
+  Wend
+
+End Sub
+
 'Filtra os dados de acordo com os filtros
 Public Function FiltraDadosDataRange(ByVal filtros As Variant, _
                                      ByVal sheetDaBaseDeDados As String) As Variant
@@ -971,19 +1131,36 @@ Public Function FiltraDadosDataRange(ByVal filtros As Variant, _
     Dim tamanhoDoArray As Long
     Dim novoDataRange() As Variant
     Dim linhaNovoDataRange As Integer
-    Dim dataRange As Variant
+    Dim DataRange As Variant
     
     'Filtra os dados do datarange e captura
-    dataRange = CapturaDadosDataRange(filtros, sheetDaBaseDeDados)
+    DataRange = CapturaDadosDataRange(filtros, sheetDaBaseDeDados)
     
     'Valida se o array é vazio
-    If IsEmpty(dataRange) Then
+    If IsEmpty(DataRange) Then
         Exit Function
     End If
     
     'Retorna o array de dados filtrados
-    FiltraDadosDataRange = dataRange
+    FiltraDadosDataRange = DataRange
     
+End Function
+
+'verifica se exitem dados na sheet
+Public Function existeDadosSheet(sheetName As String, _
+                                 linhaInicial As Integer, _
+                                 colunaInicial As Integer) As Boolean
+
+  Dim ultimaLinha As Double
+  ultimaLinha = xls.Sheets(sheetName).Cells(xls.Sheets(sheetName).Rows.Count, 2).End(xlUp).Row
+ 
+  'verifique se existe dados na sheet
+  If ultimaLinha < linhaInicial Then
+    existeDadosSheet = False
+  End If
+
+  existeDadosSheet = True
+
 End Function
 
 'Filtra os dados do datarange e captura
@@ -1042,7 +1219,7 @@ Private Function CapturaDadosDataRange(ByVal filtros As Variant, _
                     If InStr(1, filtros(j, 2), ",") = 0 Then
                         'Quando encontra o filtro, insere no cabeçalho
                         Me.workbookInstanciado.Sheets(sheetDaBaseDeDados).Range(rangeFiltro).AutoFilter _
-                                                field:=i, _
+                                                Field:=i, _
                                                 Criteria1:=Replace(filtros(j, 2), quotes, "")
                     'Se for clausula "OU"
                     Else
@@ -1051,14 +1228,14 @@ Private Function CapturaDadosDataRange(ByVal filtros As Variant, _
                         If UBound(ConverteEmArray(filtros(j, 2))) > 2 Then
                             'Marca os filtros
                             Me.workbookInstanciado.Sheets(sheetDaBaseDeDados).Range(rangeFiltro).AutoFilter _
-                                                        field:=i, _
+                                                        Field:=i, _
                                                         Criteria1:=ConverteEmArray(filtros(j, 2)), _
                                                         Operator:=xlFilterValues
                         'Se For igual a 2 criterios
                         Else
                             valorCriterios = ConverteEmArray(filtros(j, 2))
                             Me.workbookInstanciado.Sheets(sheetDaBaseDeDados).Range(rangeFiltro).AutoFilter _
-                                    field:=i, _
+                                    Field:=i, _
                                     Criteria1:="=" & valorCriterios(0), _
                                     Operator:=xlOr, _
                                     Criteria2:="=" & valorCriterios(1)
@@ -1075,9 +1252,9 @@ Private Function CapturaDadosDataRange(ByVal filtros As Variant, _
     
 '----------------------------------------------------------------
     'Copia o datarange
-    Me.workbookInstanciado.Sheets(sheetDaBaseDeDados).Range(rangeAddress).Copy
+    Me.workbookInstanciado.Sheets(sheetDaBaseDeDados).Range(rangeAddress).copy
     
-    Application.Wait Now + TimeValue("00:00:05")
+    Excel.Application.Wait Now + TimeValue("00:00:05")
     
     'Apaga os dados anteriores em paste e cola na sheet do programa para usar os dados
     meWBK.Sheets("_Paste").UsedRange.Clear
@@ -1099,8 +1276,8 @@ Private Sub CopyAndPaste(ByRef xls As Excel.Application, _
 
     On Error GoTo TryAgain
     
-    Me.workbookInstanciado.Sheets(sheetDaBaseDeDados).Range(rangeAddress).Copy
-    Application.Wait Now + TimeValue("00:00:01")
+    Me.workbookInstanciado.Sheets(sheetDaBaseDeDados).Range(rangeAddress).copy
+    Excel.Application.Wait Now + TimeValue("00:00:01")
     Excel.ActiveWorkbook.Sheets("_Paste").Paste
     
 Exit Sub
@@ -1147,3 +1324,5 @@ Private Function ConverteEmArray(ByVal filtros As String) As Variant
     ConverteEmArray = arrayFiltros
     
 End Function
+
+
