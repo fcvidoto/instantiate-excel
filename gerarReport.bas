@@ -2,6 +2,63 @@ Attribute VB_Name = "gerarReport"
 Option Compare Database
 Option Explicit
 
+'cria um novo Excel com os dados da lista
+Public Sub exportarLista(ByVal ssql As String, Optional reportIA As Boolean, Optional relatorio As String, Optional desabilitaTela As Boolean)
+  Dim Load As Load
+  Dim xls As Object
+  Dim i As Long
+  Dim campo As Object
+  Dim rs As Recordset
+  Set Load = New Load
+  If ssql = "" Then Exit Sub
+  Set rs = CurrentDb.OpenRecordset(ssql)
+  Set xls = CreateObject("Excel.Application")
+  '---------------------------
+  xls.Application.Workbooks.Add 'adiciona um novo workbook
+  '---------------------------
+  xls.sheets(1).Range("A2").CopyFromRecordset rs 'cola os dados do recordset no workbook
+  '---------------------------
+  If desabilitaTela Then
+    With xls.Application 'desabilita atualização de tela
+      .Calculation = -4135 'xlCalculationManual
+      .ScreenUpdating = False
+      .EnableEvents = False
+    End With
+    xls.Visible = False
+  Else
+    xls.Visible = True
+  End If
+  '---------------------------
+  'cola o cabecalho na linha 1
+  For Each campo In rs.Fields
+    i = i + 1
+    xls.sheets(1).cells(1, i).Value = campo.Name
+  Next campo
+  '---------------------------
+  If reportIA Then Call montaEstiloReport(xls) 'monta o estilo do report Excel'
+  '---------------------------
+  If relatorio = "ia_empresas" Then Call montaDicMarcasConcedidas(xls, relatorio) 'achuria as empresas
+  If relatorio = "ia_empresas_contando" Then Call montaDicMarcasConcedidas(xls, relatorio) 'achuria as empresas
+  '---------------------------
+  With xls.Application 'habilita atualização de tela
+    .Calculation = -4105 'xlCalculationAutomatic
+    .ScreenUpdating = True
+    .EnableEvents = True
+  End With
+  xls.Visible = True
+  '---------------------------
+  'insere as bordas na planilha
+  With xls.ActiveSheet.UsedRange
+    .Borders(7).ColorIndex = 0 'xlEdgeLeft
+    .Borders(8).ColorIndex = 0 'xlEdgeTop
+    .Borders(9).ColorIndex = 0 'xlEdgeBottom
+    .Borders(10).ColorIndex = 0 'xlEdgeRight
+    .Borders(11).ColorIndex = 0 'xlInsideVertical
+    .Borders(12).ColorIndex = 0 'xlInsideHorizontal
+  End With
+End Sub
+
+
 'preenche o relatorio com os tipos
 Public Sub preencherListaReport(ByRef lista As ListBox)
   
